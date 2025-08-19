@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小时假管理系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        /* 保持原有样式不变 */
+        body { 
+            padding: 20px; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .couplet {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: "SimSun", "STSong", serif;
+            font-size: 24px;
+            font-weight: bold;
+            color: #8B4513;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            white-space: nowrap;
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            height: 400px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .couplet-left { left: 40px; }
+        .couplet-right { right: 40px; }
+        
+        .app-container {
+            margin-top: 30px;
+            animation: fadeIn 0.5s ease-in-out;
+            flex: 1;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card { 
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            padding: 18px 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .tab-content { padding: 25px; }
+        
+        .nav-tabs { border-bottom: 1px solid #e5e7eb; }
+        
+        .nav-tabs .nav-item .nav-link {
+            color: #6b7280;
+            border: none;
+            padding: 12px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tabs .nav-item .nav-link.active {
+            color: #2563eb;
+            border-bottom: 3px solid #2563eb;
+            background-color: transparent;
+        }
+        
+        .btn-primary { 
+            background: #2563eb; 
+            border: none;
+            padding: 10px 0;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .btn-primary:hover { background: #1d4ed8; }
+        
+        .form-control {
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            outline: none;
+        }
+        
+        label {
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .remaining-container {
+            background-color: #f8fafc;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .remaining-hours {
+            color: #059669;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+        
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 15px 25px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .text-danger {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .form-icon { position: relative; }
+        
+        .form-icon i {
+            position: absolute;
+            left: 12px;
+            top: 38px;
+            color: #9ca3af;
+        }
+        
+        .form-icon .form-control { padding-left: 36px; }
+        
+        .time-range { margin-bottom: 10px; }
+        
+        .time-separator {
+            text-align: center;
+            padding: 10px 0;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        .calculated-hours {
+            background-color: #f1f5f9;
+            padding: 10px 14px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #374151;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 30px;
+            color: #6b7280;
+            font-size: 0.875rem;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #6b7280;
+        }
+        
+        .loading i {
+            font-size: 24px;
+            margin-bottom: 10px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-details {
+            font-size: 0.8rem;
+            margin-top: 8px;
+            padding: 8px;
+            background-color: rgba(255,255,255,0.8);
+            border-radius: 4px;
+            color: #7f1d1d;
+        }
+        
+        @media (max-width: 1200px) {
+            .couplet { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="couplet couplet-left">山登绝顶人为岳</div>
+    <div class="couplet couplet-right">海到无边志作帆</div>
+
+    <div class="app-container">
+        <div id="app">
+            <!-- 登录页面 -->
+            <div v-if="!userName" class="card">
+                <div class="card-header text-center">
+                    <i class="bi bi-clock-history me-2"></i>小时假管理系统
+                </div>
+                <div class="p-5">
+                    <div class="mb-3 form-icon">
+                        <i class="bi bi-person"></i>
+                        <input v-model="inputName" type="text" class="form-control" placeholder="请输入您的姓名" />
+                    </div>
+                    
+                    <!-- 登录错误提示 -->
+                    <div v-if="loginError" class="text-danger mb-3">
+                        <i class="bi bi-exclamation-circle"></i>{{ loginError }}
+                        <div v-if="errorDetails" class="error-details">
+                            {{ errorDetails }}
+                        </div>
+                    </div>
+                    
+                    <button @click="login" class="btn btn-primary w-100" :disabled="isLoggingIn">
+                        <i v-if="isLoggingIn" class="bi bi-spinner bi-spin me-1"></i>
+                        <i v-else class="bi bi-box-arrow-in-right me-1"></i>
+                        {{ isLoggingIn ? '登录中...' : '进入系统' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- 主页面 -->
+            <div v-else class="card">
+                <div class="card-header">
+                    <i class="bi bi-clipboard-data me-2"></i>假勤管理
+                </div>
+                
+                <!-- 加载状态 -->
+                <div v-if="isLoadingRemaining" class="loading">
+                    <i class="bi bi-clock-history"></i>
+                    <div>正在获取您的剩余可补休时长...</div>
+                </div>
+                
+                <div v-else>
+                    <div class="remaining-container d-flex justify-content-between align-items-center">
+                        <h5>您好，{{ userName }}</h5>
+                        <span class="remaining-hours">
+                            <i class="bi bi-clock"></i>剩余可补休时长：{{ remaining }} 小时
+                            <button @click="refreshRemaining" class="btn btn-sm btn-outline-primary ms-2">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </span>
+                    </div>
+                    
+                    <!-- 标签页 -->
+                    <ul class="nav nav-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link" :class="{active: tab === 'overtime'}" @click="tab='overtime'">
+                                <i class="bi bi-calendar-plus me-1"></i>加班记录
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" :class="{active: tab === 'leave'}" @click="tab='leave'">
+                                <i class="bi bi-calendar-check me-1"></i>补休记录
+                            </a>
+                        </li>
+                    </ul>
+                    
+                    <!-- 加班表单 -->
+                    <div v-if="tab === 'overtime'" class="tab-content">
+                        <!-- 保持原有表单内容不变 -->
+                        <div class="mb-3">
+                            <label>加班时间段</label>
+                            
+                            <div class="time-range form-icon">
+                                <i class="bi bi-calendar"></i>
+                                <input v-model="overtimeStart" type="text" class="form-control" placeholder="开始时间：YYYY-MM-DD HH:MM" />
+                                <div v-if="overtimeStartError" class="text-danger">
+                                    <i class="bi bi-exclamation-circle"></i>{{ overtimeStartError }}
+                                </div>
+                            </div>
+                            
+                            <div class="time-separator">至</div>
+                            
+                            <div class="time-range form-icon">
+                                <i class="bi bi-calendar"></i>
+                                <input v-model="overtimeEnd" type="text" class="form-control" placeholder="结束时间：YYYY-MM-DD HH:MM" />
+                                <div v-if="overtimeEndError" class="text-danger">
+                                    <i class="bi bi-exclamation-circle"></i>{{ overtimeEndError }}
+                                </div>
+                            </div>
+                            
+                            <div v-if="overtimeHours > 0" class="calculated-hours">
+                                <i class="bi bi-calculator me-1"></i>计算时长：{{ overtimeHours }} 小时
+                            </div>
+                            <div v-if="overtimeRangeError" class="text-danger">
+                                <i class="bi bi-exclamation-circle"></i>{{ overtimeRangeError }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3 form-icon">
+                            <i class="bi bi-chat-left-text"></i>
+                            <label>加班理由</label>
+                            <textarea v-model="overtimeReason" class="form-control" rows="2" placeholder="请填写加班原因"></textarea>
+                        </div>
+                        
+                        <button @click="submitOvertime" class="btn btn-primary w-100" :disabled="isSubmitting">
+                            <i v-if="isSubmitting" class="bi bi-spinner bi-spin me-1"></i>
+                            <i v-else class="bi bi-save me-1"></i>
+                            {{ isSubmitting ? '提交中...' : '提交加班记录' }}
+                        </button>
+                    </div>
+                    
+                    <!-- 补休表单 -->
+                    <div v-if="tab === 'leave'" class="tab-content">
+                        <!-- 保持原有表单内容不变 -->
+                        <div class="mb-3">
+                            <label>补休时间段</label>
+                            
+                            <div class="time-range form-icon">
+                                <i class="bi bi-calendar"></i>
+                                <input v-model="leaveStart" type="text" class="form-control" placeholder="开始时间：YYYY-MM-DD HH:MM" />
+                                <div v-if="leaveStartError" class="text-danger">
+                                    <i class="bi bi-exclamation-circle"></i>{{ leaveStartError }}
+                                </div>
+                            </div>
+                            
+                            <div class="time-separator">至</div>
+                            
+                            <div class="time-range form-icon">
+                                <i class="bi bi-calendar"></i>
+                                <input v-model="leaveEnd" type="text" class="form-control" placeholder="结束时间：YYYY-MM-DD HH:MM" />
+                                <div v-if="leaveEndError" class="text-danger">
+                                    <i class="bi bi-exclamation-circle"></i>{{ leaveEndError }}
+                                </div>
+                            </div>
+                            
+                            <div v-if="leaveHours > 0" class="calculated-hours">
+                                <i class="bi bi-calculator me-1"></i>计算时长：{{ leaveHours }} 小时
+                            </div>
+                            <div v-if="leaveRangeError" class="text-danger">
+                                <i class="bi bi-exclamation-circle"></i>{{ leaveRangeError }}
+                            </div>
+                        </div>
+                        
+                        <button @click="submitLeave" class="btn btn-primary w-100" :disabled="isSubmitting">
+                            <i v-if="isSubmitting" class="bi bi-spinner bi-spin me-1"></i>
+                            <i v-else class="bi bi-save me-1"></i>
+                            {{ isSubmitting ? '提交中...' : '提交补休记录' }}
+                        </button>
+                    </div>
+                    
+                    <!-- 提交结果提示 -->
+                    <div v-if="message" class="message" :class="messageType === 'success' ? 'bg-success text-white' : 'bg-danger text-white'">
+                        <i v-if="messageType === 'success'" class="bi bi-check-circle me-1"></i>
+                        <i v-else class="bi bi-exclamation-circle me-1"></i>
+                        {{ message }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        By Canon 20250819 版本号1.0.3
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                userName: '',
+                inputName: '',
+                tab: 'overtime',
+                remaining: 0,
+                message: '',
+                messageType: 'success',
+                
+                // 错误信息
+                loginError: '',
+                errorDetails: '',
+                
+                // 加载状态
+                isLoggingIn: false,
+                isLoadingRemaining: false,
+                isSubmitting: false,
+                
+                // 表单数据
+                overtimeStart: '',
+                overtimeEnd: '',
+                overtimeReason: '',
+                overtimeHours: 0,
+                overtimeStartError: '',
+                overtimeEndError: '',
+                overtimeRangeError: '',
+                
+                leaveStart: '',
+                leaveEnd: '',
+                leaveHours: 0,
+                leaveStartError: '',
+                leaveEndError: '',
+                leaveRangeError: '',
+                
+                // API地址 - 您可以根据实际情况修改
+                apiUrl: 'https://1374730066-djdkdgxq2g.ap-shanghai.tencentscf.com'
+            },
+            methods: {
+                // 验证日期时间格式
+                validateDateTime(dateTime) {
+                    if (!dateTime) {
+                        return '请输入日期时间';
+                    }
+                    
+                    const regex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+                    if (!regex.test(dateTime)) {
+                        return '请使用YYYY-MM-DD HH:MM格式';
+                    }
+                    
+                    const parts = dateTime.split(' ');
+                    const dateParts = parts[0].split('-');
+                    const timeParts = parts[1].split(':');
+                    
+                    const year = parseInt(dateParts[0]);
+                    const month = parseInt(dateParts[1]) - 1;
+                    const day = parseInt(dateParts[2]);
+                    const hours = parseInt(timeParts[0]);
+                    const minutes = parseInt(timeParts[1]);
+                    
+                    const date = new Date(year, month, day, hours, minutes);
+                    if (date.getFullYear() !== year || 
+                        date.getMonth() !== month || 
+                        date.getDate() !== day ||
+                        date.getHours() !== hours ||
+                        date.getMinutes() !== minutes) {
+                        return '日期时间无效';
+                    }
+                    
+                    if (date > new Date()) {
+                        return '不能选择未来的时间';
+                    }
+                    
+                    return '';
+                },
+                
+                // 计算时长
+                calculateHours(startTime, endTime) {
+                    const start = new Date(startTime.replace(' ', 'T'));
+                    const end = new Date(endTime.replace(' ', 'T'));
+                    
+                    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                        return 0;
+                    }
+                    
+                    const diffMs = end - start;
+                    const diffHours = diffMs / (1000 * 60 * 60);
+                    return Math.round(diffHours * 2) / 2;
+                },
+                
+                // 验证加班时间段
+                validateOvertimeRange() {
+                    this.overtimeStartError = this.validateDateTime(this.overtimeStart);
+                    this.overtimeEndError = this.validateDateTime(this.overtimeEnd);
+                    this.overtimeRangeError = '';
+                    
+                    if (!this.overtimeStartError && !this.overtimeEndError) {
+                        const start = new Date(this.overtimeStart.replace(' ', 'T'));
+                        const end = new Date(this.overtimeEnd.replace(' ', 'T'));
+                        
+                        if (end <= start) {
+                            this.overtimeRangeError = '结束时间必须晚于开始时间';
+                            return false;
+                        }
+                        
+                        this.overtimeHours = this.calculateHours(this.overtimeStart, this.overtimeEnd);
+                        
+                        if (this.overtimeHours < 0.5) {
+                            this.overtimeRangeError = '时间段不能少于0.5小时';
+                            return false;
+                        }
+                    } else {
+                        this.overtimeHours = 0;
+                    }
+                    
+                    return !this.overtimeStartError && !this.overtimeEndError && !this.overtimeRangeError;
+                },
+                
+                // 验证补休时间段
+                validateLeaveRange() {
+                    this.leaveStartError = this.validateDateTime(this.leaveStart);
+                    this.leaveEndError = this.validateDateTime(this.leaveEnd);
+                    this.leaveRangeError = '';
+                    
+                    if (!this.leaveStartError && !this.leaveEndError) {
+                        const start = new Date(this.leaveStart.replace(' ', 'T'));
+                        const end = new Date(this.leaveEnd.replace(' ', 'T'));
+                        
+                        if (end <= start) {
+                            this.leaveRangeError = '结束时间必须晚于开始时间';
+                            return false;
+                        }
+                        
+                        this.leaveHours = this.calculateHours(this.leaveStart, this.leaveEnd);
+                        
+                        if (this.leaveHours < 0.5) {
+                            this.leaveRangeError = '时间段不能少于0.5小时';
+                            return false;
+                        }
+                        
+                        if (this.leaveHours > this.remaining) {
+                            this.leaveRangeError = `补休时长不能超过剩余可补休时长(${this.remaining}小时)`;
+                            return false;
+                        }
+                    } else {
+                        this.leaveHours = 0;
+                    }
+                    
+                    return !this.leaveStartError && !this.leaveEndError && !this.leaveRangeError;
+                },
+                
+                // 登录功能 - 增加详细错误处理
+                async login() {
+                    // 重置错误信息
+                    this.loginError = '';
+                    this.errorDetails = '';
+                    
+                    if (!this.inputName.trim()) {
+                        this.loginError = '请输入姓名';
+                        return;
+                    }
+                    
+                    this.isLoggingIn = true;
+                    try {
+                        // 先保存用户名
+                        const userName = this.inputName.trim();
+                        
+                        // 尝试获取剩余时长，验证是否能连接到服务器
+                        const res = await fetch(this.apiUrl, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({name: userName, type: 'get'})
+                        });
+                        
+                        // 检查HTTP响应状态
+                        if (!res.ok) {
+                            // 获取详细错误信息
+                            let errorText = '';
+                            try {
+                                const errorData = await res.json();
+                                errorText = errorData.msg || `服务器返回错误: ${res.status}`;
+                            } catch (e) {
+                                errorText = `HTTP错误: ${res.status} (${res.statusText})`;
+                            }
+                            
+                            throw new Error(errorText);
+                        }
+                        
+                        // 解析响应数据
+                        const data = await res.json();
+                        
+                        // 验证数据格式
+                        if (typeof data.remaining !== 'number') {
+                            throw new Error('服务器返回数据格式不正确');
+                        }
+                        
+                        // 登录成功
+                        this.userName = userName;
+                        this.remaining = data.remaining || 0;
+                        this.inputName = ''; // 清空输入框
+                        
+                    } catch (error) {
+                        console.error('登录失败:', error);
+                        this.loginError = '登录失败，请检查网络或联系管理员';
+                        this.errorDetails = error.message; // 显示详细错误信息
+                        this.userName = ''; // 确保用户处于未登录状态
+                    } finally {
+                        this.isLoggingIn = false;
+                    }
+                },
+                
+                // 刷新剩余时长
+                async refreshRemaining() {
+                    this.isLoadingRemaining = true;
+                    try {
+                        await this.getRemaining();
+                        this.showMessage('剩余时长已更新', 'success');
+                    } catch (error) {
+                        console.error('刷新剩余时长失败:', error);
+                        this.showMessage('刷新失败: ' + error.message, 'danger');
+                    } finally {
+                        this.isLoadingRemaining = false;
+                    }
+                },
+                
+                // 获取剩余时长
+                async getRemaining() {
+                    try {
+                        const res = await fetch(this.apiUrl, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({name: this.userName, type: 'get'})
+                        });
+                        
+                        if (!res.ok) {
+                            throw new Error(`HTTP错误: ${res.status}`);
+                        }
+                        
+                        const data = await res.json();
+                        
+                        if (typeof data.remaining !== 'number') {
+                            throw new Error('获取的数据格式不正确');
+                        }
+                        
+                        this.remaining = data.remaining || 0;
+                        return true;
+                    } catch (error) {
+                        console.error('获取剩余时长失败:', error);
+                        throw error;
+                    }
+                },
+                
+                // 显示消息提示
+                showMessage(text, type = 'success') {
+                    this.message = text;
+                    this.messageType = type;
+                    setTimeout(() => this.message = '', 3000);
+                },
+                
+                // 提交加班记录
+                async submitOvertime() {
+                    if (!this.validateOvertimeRange()) {
+                        return;
+                    }
+                    
+                    if (!this.overtimeReason.trim()) {
+                        this.showMessage('请填写加班理由', 'danger');
+                        return;
+                    }
+                    
+                    this.isSubmitting = true;
+                    try {
+                        const submitData = {
+                            name: this.userName,
+                            type: 'overtime',
+                            overtime_start: this.overtimeStart,
+                            overtime_end: this.overtimeEnd,
+                            overtime_hours: this.overtimeHours,
+                            overtime_reason: this.overtimeReason,
+                            submit_time: new Date().toISOString().slice(0, 19).replace('T', ' ')
+                        };
+                        
+                        const res = await fetch(this.apiUrl, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(submitData)
+                        });
+                        
+                        if (!res.ok) {
+                            throw new Error(`提交失败: ${res.status}`);
+                        }
+                        
+                        const data = await res.json();
+                        if (data.code === 0) {
+                            this.showMessage('加班记录提交成功！');
+                            this.remaining = data.remaining;
+                            this.overtimeStart = '';
+                            this.overtimeEnd = '';
+                            this.overtimeReason = '';
+                            this.overtimeHours = 0;
+                        } else {
+                            this.showMessage(data.msg || '提交失败，请重试', 'danger');
+                        }
+                    } catch (error) {
+                        console.error('提交加班记录失败:', error);
+                        this.showMessage('提交失败，请重试', 'danger');
+                    } finally {
+                        this.isSubmitting = false;
+                    }
+                },
+                
+                // 提交补休记录
+                async submitLeave() {
+                    if (!this.validateLeaveRange()) {
+                        return;
+                    }
+                    
+                    this.isSubmitting = true;
+                    try {
+                        const submitData = {
+                            name: this.userName,
+                            type: 'leave',
+                            leave_start: this.leaveStart,
+                            leave_end: this.leaveEnd,
+                            leave_hours: this.leaveHours,
+                            submit_time: new Date().toISOString().slice(0, 19).replace('T', ' ')
+                        };
+                        
+                        const res = await fetch(this.apiUrl, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(submitData)
+                        });
+                        
+                        if (!res.ok) {
+                            throw new Error(`提交失败: ${res.status}`);
+                        }
+                        
+                        const data = await res.json();
+                        if (data.code === 0) {
+                            this.showMessage('补休记录提交成功！');
+                            this.remaining = data.remaining;
+                            this.leaveStart = '';
+                            this.leaveEnd = '';
+                            this.leaveHours = 0;
+                        } else {
+                            this.showMessage(data.msg || '提交失败，请重试', 'danger');
+                        }
+                    } catch (error) {
+                        console.error('提交补休记录失败:', error);
+                        this.showMessage('提交失败，请重试', 'danger');
+                    } finally {
+                        this.isSubmitting = false;
+                    }
+                }
+            },
+            watch: {
+                overtimeStart() { this.validateOvertimeRange(); },
+                overtimeEnd() { this.validateOvertimeRange(); },
+                leaveStart() { this.validateLeaveRange(); },
+                leaveEnd() { this.validateLeaveRange(); }
+            }
+        });
+    </script>
+</body>
+</html>
+    
